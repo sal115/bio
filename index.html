@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Laborator Biologie - Evoluție Completă</title>
+    <style>
+        :root { --accent: #22c55e; --soil: #3d2b1f; --sky: linear-gradient(180deg, #60a5fa 0%, #dbeafe 100%); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; background: #0f172a; overflow: hidden; }
+
+        .left-panel { width: 45%; background: white; display: flex; flex-direction: column; padding: 25px; box-shadow: 10px 0 30px rgba(0,0,0,0.3); z-index: 2; }
+        .right-panel { width: 55%; background: #000; display: flex; align-items: center; justify-content: center; }
+        
+        .plant-selector { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .plant-btn { flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer; font-weight: bold; background: white; min-width: 90px; font-size: 12px; }
+        .plant-btn.active { border-color: var(--accent); background: #f0fdf4; color: var(--accent); }
+        .btn-anim { background: #fbbf24; border-color: #f59e0b; color: #000; }
+
+        .viewport { height: 350px; background: var(--sky); border-radius: 16px; position: relative; overflow: hidden; border: 2px solid #e2e8f0; }
+        .ground { position: absolute; bottom: 0; width: 100%; height: 120px; background: var(--soil); border-top: 4px solid #2d1f16; z-index: 1; }
+
+        .organism { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 5; }
+        
+        /* Grafică generată (Pașii 1 și 2) */
+        .bulb-code { width: 50px; height: 60px; background: radial-gradient(circle at 30% 30%, #d4a373, #8b5e34); border-radius: 50% 50% 40% 40%; position: absolute; top: 10px; display: none; }
+        .rizom-code { width: 80px; height: 30px; background: #5d4037; border-radius: 20px; position: absolute; top: 20px; display: none; }
+        .roots-container { position: absolute; top: 40px; display: flex; gap: 10px; z-index: 0; }
+        .root-line { width: 2px; height: 0; background: #efebe9; opacity: 0.8; transition: 1s ease-out; }
+
+        .leaf-box { display: none; align-items: flex-end; gap: 5px; height: 80px; margin-bottom: 10px; }
+        .leaf-line { width: 8px; height: 0; background: linear-gradient(#22c55e, #166534); border-radius: 10px 10px 0 0; transition: 1s; }
+        .strawberry-bush { width: 50px; height: 0; background: #166534; border-radius: 50% 50% 0 0; transition: 1s; display: none; position: relative; }
+        .stolon { position: absolute; height: 4px; background: #4ade80; width: 0; left: 25px; bottom: 5px; transition: 1.5s; }
+
+        .real-img { max-height: 200px; opacity: 0; transition: 0.6s; position: absolute; bottom: 0; }
+        #bee { position: absolute; width: 50px; top: 30px; right: -60px; transition: 1.2s; z-index: 20; }
+        #baby { position: absolute; width: 55px; bottom: 0; left: 80px; opacity: 0; transform: scale(0); transition: 0.8s; }
+
+        /* Afișare în funcție de plantă */
+        .mode-zambila .bulb-code, .mode-lalea .bulb-code { display: block; }
+        .mode-zambila .leaf-box, .mode-lalea .leaf-box, .mode-iris .leaf-box { display: flex; }
+        .mode-iris .rizom-code { display: block; }
+        .mode-capsuni .strawberry-bush { display: block; }
+
+        .step-roots .root-line { height: 45px; }
+        .step-2 .leaf-line { height: 80px; }
+        .step-2 .strawberry-bush { height: 45px; }
+        .step-stolon .stolon { width: 130px; }
+
+        /* ALBINA DOAR LA LALEA */
+        .mode-lalea.step-polenizare #bee { right: 55%; top: 80px; }
+
+        /* Tranziție la Imagine Reală (Pasul 3 sau 4) */
+        .mode-zambila.step-3 .real-img, .mode-zambila.step-4 .real-img,
+        .mode-lalea.step-3 .real-img, .mode-lalea.step-4 .real-img,
+        .mode-iris.step-3 .real-img, .mode-iris.step-4 .real-img,
+        .mode-capsuni.step-4 .real-img { opacity: 1; }
+
+        .mode-zambila.step-3 .leaf-box, .mode-zambila.step-3 .bulb-code,
+        .mode-lalea.step-3 .leaf-box, .mode-lalea.step-3 .bulb-code,
+        .mode-iris.step-3 .leaf-box, .mode-iris.step-3 .rizom-code,
+        .mode-capsuni.step-4 .strawberry-bush { opacity: 0; }
+
+        .info-box { margin-top: 15px; padding: 15px; background: #f8fafc; border-left: 5px solid var(--accent); border-radius: 8px; min-height: 80px; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .step-btn { padding: 10px; border: none; background: #f1f5f9; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px; }
+        .step-btn.active { background: var(--accent); color: white; }
+
+        /* Overlay Animatii */
+        #piersic-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; flex-direction:column; align-items:center; justify-content:center; }
+        .piersic-card { width:450px; background:white; border-radius:20px; overflow:hidden; position:relative; }
+        #piersic-img { width:100%; height:400px; object-fit:contain; transition: 0.4s; }
+    </style>
+</head>
+<body>
+
+<div class="left-panel">
+    <div class="plant-selector">
+        <button class="plant-btn active" onclick="selectPlant('zambila', this)">Zambilă</button>
+        <button class="plant-btn" onclick="selectPlant('lalea', this)">Lalea</button>
+        <button class="plant-btn" onclick="selectPlant('iris', this)">Iris</button>
+        <button class="plant-btn" onclick="selectPlant('capsuni', this)">Căpșuni</button>
+        <button class="plant-btn btn-anim" onclick="pornesteAnimatiePiersic()">🎬 Piersic</button>
+        <button class="plant-btn btn-anim" onclick="pornesteAnimatieAltoire()">✂️ Altoire</button>
+        <button class="plant-btn btn-anim" onclick="pornesteAnimatieVita()">🍷 Vița</button>
+    </div>
+
+    <div class="viewport" id="scene">
+        <img src="albina.png" id="bee">
+        <div class="organism">
+            <div class="roots-container">
+                <div class="root-line" style="transform: rotate(20deg)"></div>
+                <div class="root-line"></div>
+                <div class="root-line" style="transform: rotate(-20deg)"></div>
+            </div>
+            <div class="bulb-code"></div>
+            <div class="rizom-code"></div>
+            <div class="leaf-box"><div class="leaf-line" style="transform:rotate(-10deg)"></div><div class="leaf-line"></div><div class="leaf-line" style="transform:rotate(10deg)"></div></div>
+            <div class="strawberry-bush"><div class="stolon"></div></div>
+            
+            <img id="main-img" src="zambila.png" class="real-img">
+            <img id="baby" src="zambila_mica.svg">
+        </div>
+        <div class="ground"></div>
+    </div>
+
+    <div class="controls">
+        <button class="step-btn active" id="btn1" onclick="setStep(1, this)">1. Rădăcini</button>
+        <button class="step-btn" id="btn2" onclick="setStep(2, this)">2. Germinare</button>
+        <button class="step-btn" id="btn3" onclick="setStep(3, this)">3. Dezvoltare</button>
+        <button class="step-btn" id="btn4" onclick="setStep(4, this)">4. Înmulțire</button>
+    </div>
+
+    <div class="info-box">
+        <h3 id="step-title" style="margin:0; font-size:16px;">Pasul 1: Fixarea</h3>
+        <p id="step-desc" style="margin:5px 0 0 0; font-size:14px; color:#64748b;">Organul de depozitare începe să prindă rădăcini în sol.</p>
+    </div>
+</div>
+
+<div class="right-panel">
+    <video controls style="width:90%; border-radius:12px;"><source src="biologie.mp4" type="video/mp4"></video>
+</div>
+
+<div id="piersic-overlay">
+    <div class="piersic-card">
+        <img id="piersic-img" src="1.png">
+        <div id="piersic-text" style="padding:15px; text-align:center; font-weight:bold; font-size:18px;"></div>
+    </div>
+    <button onclick="oprestePiersic()" style="margin-top:20px; padding:10px 30px; background:#ef4444; color:white; border:none; border-radius:20px; cursor:pointer; font-weight:bold;">ÎNCHIDE</button>
+</div>
+
+<script>
+    let currentPlant = 'zambila';
+    let piersicInterval;
+
+    const data = {
+        zambila: { steps: ["Rădăcini Bulb", "Frunze", "Zambilă Reală", "Bulbi Noi"], baby: "zambila_mica.svg", desc: ["Bulbul se fixează și absoarbe apa.", "Frunzele cresc din vârful bulbului.", "Planta înflorește la maturitate.", "Apar bulbi pui lângă bulbul mamă."] },
+        lalea: { steps: ["Rădăcini Lalea", "Frunze Lalea", "Lalea Reală", "Pui Lalea"], baby: "lalea_mica.svg", desc: ["Bulbul de lalea prinde rădăcini.", "Apar frunzele caracteristice.", "Albina polenizează laleaua matură.", "Apar noi bulbișori sub pământ."] },
+        iris: { steps: ["Rădăcini Rizom", "Frunze Iris", "Iris Real", "Nouă Plantă"], baby: "zambila_mica.svg", desc: ["Rizomul se fixează în sol.", "Frunzele cresc direct din nodurile rizomului.", "Floarea complexă de iris se deschide.", "Rizomul se divide pentru a forma o nouă plantă."] },
+        capsuni: { steps: ["Rădăcini", "Tufă", "Stoloni", "Căpșuni Reali"], baby: "", desc: ["Sistemul radicular se dezvoltă.", "Tufa de căpșun devine bogată.", "Stolonul se extinde pentru înmulțire.", "Fructele se coc la maturitate."] }
+    };
+
+    const etapePiersic = [{img:"1.png", txt:"1. Sămânța"}, {img:"2.png", txt:"2. Germinare"}, {img:"3.png", txt:"3. Lastar"}, {img:"5.png", txt:"4. Pom "}, {img:"6.png", txt:"5. Floare"}, {img:"7.png", txt:"6. Copac cu fructe"}, {img:"8.png", txt:"7. Fructe cu seminte"}];
+    const etapeAltoire = ["altoire1.png", "altoire2.png", "altoire3.png"];
+    const etapeVita = ["vita1.png", "vita2.png", "vita3.png"];
+
+    function selectPlant(type, btn) {
+        currentPlant = type;
+        document.querySelectorAll('.plant-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('main-img').src = type + '.png';
+        document.getElementById('baby').src = data[type].baby;
+        setStep(1, document.getElementById('btn1'));
+    }
+
+    function setStep(step, btn) {
+        const scene = document.getElementById('scene');
+        const baby = document.getElementById('baby');
+        document.querySelectorAll('.step-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        scene.className = 'viewport mode-' + currentPlant;
+        baby.style.opacity = "0"; baby.style.transform = "scale(0)";
+
+        if(step >= 1) scene.classList.add('step-roots');
+        if(step >= 2) { scene.classList.add('step-2'); if(currentPlant === 'capsuni') scene.classList.add('step-stolon'); }
+        if(step >= 3) { scene.classList.add('step-polenizare'); if(currentPlant !== 'capsuni') scene.classList.add('step-3'); }
+        if(step >= 4) { scene.classList.add('step-4'); if(data[currentPlant].baby !== "") { baby.style.opacity = "1"; baby.style.transform = "scale(1)"; } }
+
+        document.getElementById('step-title').innerText = "Pasul " + step + ": " + data[currentPlant].steps[step-1];
+        document.getElementById('step-desc').innerText = data[currentPlant].desc[step-1];
+    }
+
+    function pornesteAnimatiePiersic() {
+        const overlay = document.getElementById('piersic-overlay');
+        const img = document.getElementById('piersic-img');
+        const txt = document.getElementById('piersic-text');
+        overlay.style.display = 'flex'; txt.style.display = 'block';
+        let i = 0; clearInterval(piersicInterval);
+        const r = () => { img.style.opacity = 0; setTimeout(() => { img.src = etapePiersic[i].img; txt.innerText = etapePiersic[i].txt; img.style.opacity = 1; i++; if(i >= etapePiersic.length) { clearInterval(piersicInterval); setTimeout(oprestePiersic, 1500); } }, 400); };
+        r(); piersicInterval = setInterval(r, 2500);
+    }
+
+    function pornesteAnimatieAltoire() { runAnim(etapeAltoire); }
+    function pornesteAnimatieVita() { runAnim(etapeVita); }
+
+    function runAnim(lista) {
+        const overlay = document.getElementById('piersic-overlay');
+        const img = document.getElementById('piersic-img');
+        document.getElementById('piersic-text').style.display = 'none';
+        overlay.style.display = 'flex';
+        let i = 0; clearInterval(piersicInterval);
+        const r = () => { img.style.opacity = 0; setTimeout(() => { img.src = lista[i]; img.style.opacity = 1; i++; if(i >= lista.length) { clearInterval(piersicInterval); setTimeout(oprestePiersic, 1500); } }, 400); };
+        r(); piersicInterval = setInterval(r, 2500);
+    }
+
+    function oprestePiersic() { document.getElementById('piersic-overlay').style.display = 'none'; clearInterval(piersicInterval); }
+</script>
+</body>
+</html>
